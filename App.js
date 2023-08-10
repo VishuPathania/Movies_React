@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState , useCallback} from 'react';
 import MoviesList from './components/MoviesList';
 import './App.css';
 
@@ -6,18 +6,13 @@ function App() {
   const [movies, setMovies] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [retryCount, setRetryCount] = useState(0);
-  const [retrying, setRetrying] = useState(false);
 
-  const retryInterval = 5000; // 5 seconds
 
-  async function fetchMoviesHandler() {
+  const   fetchMoviesHandler= useCallback( async ()=> {
     setIsLoading(true);
     setError(null);
-    setRetryCount(0); // Reset retry count
-
     try {
-      const response = await fetch('https://swapi.dev/api/film');
+      const response = await fetch('https://swapi.dev/api/films');
       if (!response.ok) {
         throw new Error('Something went wrong ....Retrying !');
       }
@@ -35,34 +30,13 @@ function App() {
       setMovies(transformedMovies);
     } catch (error) {
       setError(error.message);
-      startRetrying();
     }
     setIsLoading(false);
-  }
+  } , []);
 
-  useEffect(() => {
-    if (retrying) {
-      const retryTimer = setInterval(fetchMoviesHandler, retryInterval);
-
-      return () => {
-        clearInterval(retryTimer);
-      };
-    }
-  }, [retrying]);
-
-  const startRetrying = () => {
-    setRetryCount(retryCount + 1);
-    if (retryCount >= 3) {
-      setRetrying(false);
-      setError('Retried 3 times, but still failed.');
-    } else {
-      setRetrying(true);
-    }
-  };
-
-  const stopRetrying = () => {
-    setRetrying(false);
-  };
+  useEffect( () => {
+    fetchMoviesHandler();
+  }, [fetchMoviesHandler]);
 
   let content = <p>Found no movies.</p>;
 
@@ -71,12 +45,7 @@ function App() {
   }
 
   if (error) {
-    content = (
-      <div>
-        <p>{error}</p>
-        {retrying && <button onClick={stopRetrying}>Stop Retrying</button>}
-      </div>
-    );
+    content = <p>{error}</p>;
   }
 
   if (isLoading) {
